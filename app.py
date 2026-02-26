@@ -58,7 +58,7 @@ def load_model():
     # Download the model if it doesn't exist locally
     if not os.path.exists(model_path):
         st.info("Downloading AI model from Google Drive... This may take a minute but only happens once!")
-        
+        file_id = '1Jky0WHb7G0ni9jJHG5zYYrxgQTQSHtux' 
         url = 'https://drive.google.com/uc?id=1Jky0WHb7G0ni9jJHG5zYYrxgQTQSHtux'
         gdown.download(url, model_path, quiet=False)
 
@@ -121,47 +121,47 @@ model, device = load_model()
 # Audio Input Widget
 audio_value = st.audio_input("Record a recitation")
 
+# If an audio file is recorded or uploaded, run immediately
 if audio_value is not None:
-    st.audio(audio_value)
+    st.audio(audio_value) # Playback option for the user
     
-    if st.button("Identify Ayat"):
-        if model is None:
-            st.error("Model failed to load. Please check the Google Drive link permissions.")
-        else:
-            with st.spinner("Analyzing recitation..."):
-                try:
-                    # Read bytes from the uploaded/recorded file
-                    audio_bytes = audio_value.read()
-                    
-                    # Preprocess
-                    input_tensor = preprocess_audio(audio_bytes).to(device)
+    if model is None:
+        st.error("Model failed to load. Please check the Google Drive link permissions.")
+    else:
+        with st.spinner("Analyzing recitation..."):
+            try:
+                # Read bytes from the uploaded/recorded file
+                audio_bytes = audio_value.read()
+                
+                # Preprocess
+                input_tensor = preprocess_audio(audio_bytes).to(device)
 
-                    # Predict
-                    with torch.no_grad():
-                        outputs = model(input_tensor)
-                        probs = torch.nn.functional.softmax(outputs, dim=1)
-                        top_prob, top_idx = torch.topk(probs, 1)
-                    
-                    ayah_num = top_idx.item() + 1
-                    confidence = top_prob.item() * 100
+                # Predict
+                with torch.no_grad():
+                    outputs = model(input_tensor)
+                    probs = torch.nn.functional.softmax(outputs, dim=1)
+                    top_prob, top_idx = torch.topk(probs, 1)
+                
+                ayah_num = top_idx.item() + 1
+                confidence = top_prob.item() * 100
 
-                    # Display Result
-                    st.success(f"Prediction: **Ayah {ayah_num}**")
-                    st.info(f"Confidence: {confidence:.2f}%")
+                # Display Result
+                st.success(f"Prediction: **Ayat {ayah_num}**")
+                st.info(f"Confidence: {confidence:.2f}%")
 
-                    # Fetch Translation (Assuming Surah 2 / Al-Baqarah)
-                    surah_number = 2 
-                    
-                    api_url = f"https://api.alquran.cloud/v1/ayah/{surah_number}:{ayah_num}/en.asad"
-                    response = requests.get(api_url)
-                    
-                    if response.status_code == 200:
-                        data = response.json()
-                        st.markdown("### Translation:")
-                        st.markdown(f"> {data['data']['text']}")
-                        st.caption(f"Surah {data['data']['surah']['englishName']}, Ayah {ayah_num}")
-                    else:
-                        st.warning("Could not fetch translation from API.")
+                # Fetch Translation (Assuming Surah 2 / Al-Baqarah)
+                surah_number = 2 
+                
+                api_url = f"https://api.alquran.cloud/v1/ayah/{surah_number}:{ayah_num}/en.asad"
+                response = requests.get(api_url)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    st.markdown("### Translation:")
+                    st.markdown(f"> {data['data']['text']}")
+                    st.caption(f"Surah {data['data']['surah']['englishName']}, Ayat {ayah_num}")
+                else:
+                    st.warning("Could not fetch translation from API.")
 
-                except Exception as e:
-                    st.error(f"Error processing audio: {e}")
+            except Exception as e:
+                st.error(f"Error processing audio: {e}")
