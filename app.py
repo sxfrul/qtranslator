@@ -58,7 +58,6 @@ def load_model():
     # Download the model if it doesn't exist locally
     if not os.path.exists(model_path):
         st.info("Downloading AI model from Google Drive... This may take a minute but only happens once!")
-        file_id = '1Jky0WHb7G0ni9jJHG5zYYrxgQTQSHtux' 
         url = 'https://drive.google.com/uc?id=1Jky0WHb7G0ni9jJHG5zYYrxgQTQSHtux'
         gdown.download(url, model_path, quiet=False)
 
@@ -112,23 +111,35 @@ def preprocess_audio(audio_bytes, target_length=256):
 # ==========================================================
 # 4. STREAMLIT UI & MAIN PIPELINE
 # ==========================================================
-st.title("🎙️ Quran Recitation Translator")
-st.write("Recite an Ayat, and the AI will identify and translate it.")
+st.title("Quran Recitation Translator")
+st.write("Recite an Ayat or upload an audio file, and the AI will identify and translate it.")
 
 # Load Model
 model, device = load_model()
 
-# Audio Input Widget
-audio_value = st.audio_input("Record a recitation")
+# Create Tabs for Record vs Upload
+tab1, tab2 = st.tabs(["🎤 Record Audio", "📁 Upload File"])
 
-# If an audio file is recorded or uploaded, run immediately
+audio_value = None
+
+with tab1:
+    recorded_audio = st.audio_input("Record a recitation")
+    if recorded_audio is not None:
+        audio_value = recorded_audio
+
+with tab2:
+    uploaded_file = st.file_uploader("Upload an MP3 or WAV file", type=["mp3", "wav", "m4a", "ogg"])
+    if uploaded_file is not None:
+        audio_value = uploaded_file
+
+# If ANY audio source is provided (recorded or uploaded), run immediately
 if audio_value is not None:
     st.audio(audio_value) # Playback option for the user
     
     if model is None:
         st.error("Model failed to load. Please check the Google Drive link permissions.")
     else:
-        with st.spinner("Analyzing recitation..."):
+        with st.spinner("Analyzing audio..."):
             try:
                 # Read bytes from the uploaded/recorded file
                 audio_bytes = audio_value.read()
