@@ -1,0 +1,8 @@
+streamlit
+torch
+librosa
+scipy
+numpy
+soundfile
+requests
+gdown
